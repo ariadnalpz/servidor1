@@ -1,15 +1,16 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const speakeasy = require('speakeasy'); // Importa speakeasy
+const speakeasy = require('speakeasy');
 const { saveLog } = require('../models/log');
 const db = require('../config/firebase');
+const limiter = require('../middleware/rateLimit'); // Importa el middleware
 require('dotenv').config();
 
 const router = express.Router();
 
 // API getInfo (GET)
-router.get('/getInfo', async (req, res) => {
+router.get('/getInfo', limiter, async (req, res) => {
   try {
     await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version });
     res.json({
@@ -21,48 +22,47 @@ router.get('/getInfo', async (req, res) => {
     });
   } catch (error) {
     console.error('Error en getInfo:', error);
+    await saveLog('error', 'Error en getInfo', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 // API Register (POST)
-router.post('/register', async (req, res) => {
-  const { email, username, password } = req.body;
+router.post('/register', limiter, async (req, res) => {
+  const { email, username, password, grado, grupo } = req.body;
 
-  if (!email || !username || !password || !/\S+@\S+\.\S+/.test(email)) {
+  if (!email || !username || !password || !grado || !grupo || !/\S+@\S+\.\S+/.test(email)) {
     await saveLog('error', 'Registro fallido', { reason: 'Datos inválidos' });
     return res.status(400).json({ error: 'Datos inválidos' });
   }
 
   try {
-    // Verifica si el usuario ya existe
     const userSnapshot = await db.collection('users').where('email', '==', email).get();
     if (!userSnapshot.empty) {
       await saveLog('error', 'Registro fallido', { reason: 'Usuario ya existe' });
       return res.status(400).json({ error: 'El usuario ya existe' });
     }
 
-    // Genera un secreto para TOTP
     const secret = speakeasy.generateSecret({
-      name: `AriadnaApp:${email}`, // Nombre que aparecerá en Google Authenticator
+      name: `AriadnaApp:${email}`,
     });
 
-    // Hashea la contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Guarda el usuario con el secreto
     await db.collection('users').add({
       email,
       username,
       password: hashedPassword,
-      otpSecret: secret.base32, // Guarda el secreto en base32
+      grado,
+      grupo,
+      otpSecret: secret.base32,
     });
 
     await saveLog('info', 'Usuario registrado', { email, username });
     res.status(201).json({
       message: 'Usuario registrado',
-      secret: secret.base32, // Devuelve el secreto para generar el QR en el frontend
-      otpauthUrl: secret.otpauth_url, // URL para el código QR
+      secret: secret.base32,
+      otpauthUrl: secret.otpauth_url,
     });
   } catch (error) {
     console.error('Error en register:', error);
@@ -72,7 +72,7 @@ router.post('/register', async (req, res) => {
 });
 
 // API Login (POST)
-router.post('/login', async (req, res) => {
+router.post('/login', limiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -99,7 +99,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Verificar OTP y generar JWT
-router.post('/verify-otp', async (req, res) => {
+router.post('/verify-otp', limiter, async (req, res) => {
   const { email, otp } = req.body;
 
   try {
@@ -112,12 +112,11 @@ router.post('/verify-otp', async (req, res) => {
     const user = userSnapshot.docs[0].data();
     const secret = user.otpSecret;
 
-    // Verifica el código OTP
     const verified = speakeasy.totp.verify({
       secret: secret,
       encoding: 'base32',
       token: otp,
-      window: 1, // Tolerancia de 1 intervalo (30 segundos)
+      window: 1,
     });
 
     if (!verified) {
