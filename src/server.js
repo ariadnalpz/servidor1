@@ -7,11 +7,7 @@ require('dotenv').config();
 const app = express();
 
 // Configura CORS para permitir solicitudes desde http://localhost:3000
-app.use(cors({
-  origin: 'http://localhost:3000', // Permite solo este origen
-  methods: ['GET', 'POST'], // Métodos permitidos
-  allowedHeaders: ['Content-Type'], // Encabezados permitidos
-}));
+app.use(cors());
 
 app.use(express.json());
 app.use(rateLimit); // Aplica Rate Limit globalmente
