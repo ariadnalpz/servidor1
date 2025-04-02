@@ -1,13 +1,17 @@
 const express = require('express');
-const cors = require('cors'); // Importa el paquete cors
+const cors = require('cors');
 const rateLimit = require('./middleware/rateLimit');
 const authRoutes = require('./routes/auth');
 require('dotenv').config();
 
 const app = express();
 
-// Configura CORS para permitir solicitudes desde http://localhost:3000
-app.use(cors());
+// Configura CORS para permitir solicitudes desde el dominio de tu frontend
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://frontend-teal-six-25.vercel.app'], // Cambia 'https://tufrontend.com' por el dominio real de tu frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 app.use(express.json());
 app.use(rateLimit); // Aplica Rate Limit globalmente
