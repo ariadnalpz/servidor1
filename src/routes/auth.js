@@ -4,13 +4,14 @@ const bcrypt = require('bcryptjs');
 const speakeasy = require('speakeasy');
 const { saveLog } = require('../models/log');
 const db = require('../config/firebase');
-const limiter = require('../middleware/rateLimit'); // Importa el middleware
+const limiter = require('../middleware/rateLimit');
+const verifyToken = require('../middleware/auth'); // Importa el middleware
 require('dotenv').config();
 
 const router = express.Router();
 
 // API getInfo (GET)
-router.get('/getInfo', limiter, async (req, res) => {
+router.get('/getInfo', limiter, verifyToken, async (req, res) => {
   try {
     await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version });
     res.json({
@@ -130,6 +131,29 @@ router.post('/verify-otp', limiter, async (req, res) => {
   } catch (error) {
     console.error('Error en verify-otp:', error);
     await saveLog('error', 'Error al verificar OTP', { error: error.message });
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Nueva ruta para obtener logs (GET) - Protegida con verifyToken
+router.get('/logs', limiter, verifyToken, async (req, res) => {
+  try {
+    const logsSnapshot = await db.collection('logs').get();
+
+    const server1Logs = { info: 0, error: 0 };
+    const server2Logs = { info: 0, error: 0 };
+
+    logsSnapshot.forEach(doc => {
+      const { server, level } = doc.data();
+      if (server === 'Servidor 1') server1Logs[level]++;
+      else if (server === 'Servidor 2') server2Logs[level]++;
+    });
+
+    await saveLog('info', 'Logs consultados', { server: 'Servidor 1' });
+    res.json({ server1: server1Logs, server2: server2Logs });
+  } catch (error) {
+    console.error('Error al obtener logs:', error);
+    await saveLog('error', 'Error al obtener logs', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
