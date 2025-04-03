@@ -146,10 +146,9 @@ router.get('/logs', limiter, async (req, res) => {
         id: doc.id,
         ...doc.data()
       };
-      // Filtrar datos sensibles del body
       if (logData.body) {
-        delete logData.body.password; // Eliminar contraseña
-        delete logData.body.otp;      // Eliminar OTP
+        delete logData.body.password;
+        delete logData.body.otp;
       }
       return logData;
     });
@@ -162,7 +161,7 @@ router.get('/logs', limiter, async (req, res) => {
       else if (log.server === 'Servidor 2') server2Logs[log.level]++;
     });
 
-    await saveLog('info', 'Logs consultados', { total: logs.length }, req);
+    // No registrar este evento como log
     res.json({
       server1: server1Logs,
       server2: server2Logs,
