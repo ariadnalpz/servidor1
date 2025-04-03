@@ -9,17 +9,6 @@ require('dotenv').config();
 
 const router = express.Router();
 
-// Middleware global para medir tiempo de respuesta y logs básicos
-router.use((req, res, next) => {
-  const startTime = Date.now();
-  res.on('finish', async () => {
-    const responseTime = Date.now() - startTime;
-    const logLevel = res.statusCode >= 400 ? 'error' : 'info';
-    await saveLog(logLevel, 'Solicitud completada', { status: res.statusCode, responseTime }, req);
-  });
-  next();
-});
-
 // API getInfo (GET)
 router.get('/getInfo', limiter, async (req, res) => {
   try {
@@ -145,22 +134,34 @@ router.post('/verify-otp', limiter, async (req, res) => {
   }
 });
 
-// Nueva ruta para obtener logs (GET)
+// Ruta para obtener logs (GET) - Ahora devuelve los logs completos
 router.get('/logs', limiter, async (req, res) => {
   try {
-    const logsSnapshot = await db.collection('logs').orderBy('timestamp', 'desc').get();
+    const logsSnapshot = await db.collection('logs')
+      .orderBy('timestamp', 'desc')
+      .get();
 
+    const logs = logsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Contadores por servidor y nivel
     const server1Logs = { info: 0, error: 0 };
     const server2Logs = { info: 0, error: 0 };
 
-    const logs = logsSnapshot.docs.map(doc => doc.data());
     logs.forEach(log => {
       if (log.server === 'Servidor 1') server1Logs[log.level]++;
       else if (log.server === 'Servidor 2') server2Logs[log.level]++;
     });
 
-    await saveLog('info', 'Logs consultados', { server: 'Servidor 1' }, req);
-    res.json({ server1: server1Logs, server2: server2Logs, totalLogs: logs.length });
+    await saveLog('info', 'Logs consultados', { total: logs.length }, req);
+    res.json({
+      server1: server1Logs,
+      server2: server2Logs,
+      totalLogs: logs.length,
+      logs: logs // Devolvemos los logs completos
+    });
   } catch (error) {
     console.error('Error al obtener logs:', error);
     await saveLog('error', 'Error al obtener logs', { error: error.message }, req);
