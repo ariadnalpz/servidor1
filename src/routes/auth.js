@@ -5,7 +5,7 @@ const speakeasy = require('speakeasy');
 const { saveLog } = require('../models/log');
 const db = require('../config/firebase');
 const limiter = require('../middleware/rateLimit');
-const verifyToken = require('../middleware/auth'); // Importa el middleware
+const verifyToken = require('../routes/auth'); // Importa el middleware
 require('dotenv').config();
 
 const router = express.Router();
