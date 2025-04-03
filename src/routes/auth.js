@@ -34,9 +34,9 @@ router.get('/getInfo', limiter, async (req, res) => {
     res.json({
       nodeVersion: process.version,
       student: {
-        name: user.username,  // Nombre del usuario
-        grade: user.grado,    // Grado del usuario
-        group: user.grupo     // Grupo del usuario
+        name: user.username,  
+        grade: user.grado,    
+        group: user.grupo   
       },
     });
   } catch (error) {
@@ -153,7 +153,7 @@ router.post('/verify-otp', limiter, async (req, res) => {
   }
 });
 
-// Ruta para obtener logs (GET) - Ahora devuelve los logs completos
+// Ruta para obtener logs (GET)
 router.get('/logs', limiter, async (req, res) => {
   try {
     const logsSnapshot = await db.collection('logs')

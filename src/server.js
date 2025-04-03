@@ -14,7 +14,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(rateLimit); // Aplica Rate Limit globalmente
+app.use(rateLimit);
 app.use('/api', authRoutes);
 
 const PORT = process.env.PORT || 3001;
