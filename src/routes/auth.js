@@ -12,12 +12,31 @@ const router = express.Router();
 // API getInfo (GET)
 router.get('/getInfo', limiter, async (req, res) => {
   try {
+    // Obtener el token del header
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+
+    // Verificar el token y obtener el email
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const email = decoded.email;
+
+    // Buscar al usuario en Firestore
+    const userSnapshot = await db.collection('users').where('email', '==', email).get();
+    if (userSnapshot.empty) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const user = userSnapshot.docs[0].data();
+
     await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version }, req);
     res.json({
       nodeVersion: process.version,
       student: {
-        name: 'Ariadna Vanessa López Gómez',
-        group: 'IDGS11',
+        name: user.username,  // Nombre del usuario
+        grade: user.grado,    // Grado del usuario
+        group: user.grupo     // Grupo del usuario
       },
     });
   } catch (error) {
