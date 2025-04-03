@@ -5,13 +5,12 @@ const speakeasy = require('speakeasy');
 const { saveLog } = require('../models/log');
 const db = require('../config/firebase');
 const limiter = require('../middleware/rateLimit');
-const verifyToken = require('../routes/auth'); // Importa el middleware
 require('dotenv').config();
 
 const router = express.Router();
 
-// API getInfo (GET)
-router.get('/getInfo', limiter, verifyToken, async (req, res) => {
+// API getInfo (GET) 
+router.get('/getInfo', limiter, async (req, res) => {
   try {
     await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version });
     res.json({
@@ -135,8 +134,8 @@ router.post('/verify-otp', limiter, async (req, res) => {
   }
 });
 
-// Nueva ruta para obtener logs (GET) - Protegida con verifyToken
-router.get('/logs', limiter, verifyToken, async (req, res) => {
+// Nueva ruta para obtener logs (GET)
+router.get('/logs', limiter, async (req, res) => {
   try {
     const logsSnapshot = await db.collection('logs').get();
 
