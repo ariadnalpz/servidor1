@@ -141,12 +141,19 @@ router.get('/logs', limiter, async (req, res) => {
       .orderBy('timestamp', 'desc')
       .get();
 
-    const logs = logsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const logs = logsSnapshot.docs.map(doc => {
+      const logData = {
+        id: doc.id,
+        ...doc.data()
+      };
+      // Filtrar datos sensibles del body
+      if (logData.body) {
+        delete logData.body.password; // Eliminar contraseña
+        delete logData.body.otp;      // Eliminar OTP
+      }
+      return logData;
+    });
 
-    // Contadores por servidor y nivel
     const server1Logs = { info: 0, error: 0 };
     const server2Logs = { info: 0, error: 0 };
 
@@ -160,7 +167,7 @@ router.get('/logs', limiter, async (req, res) => {
       server1: server1Logs,
       server2: server2Logs,
       totalLogs: logs.length,
-      logs: logs // Devolvemos los logs completos
+      logs: logs
     });
   } catch (error) {
     console.error('Error al obtener logs:', error);
