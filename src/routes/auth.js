@@ -13,12 +13,22 @@ const router = express.Router();
 // API getInfo (GET) - Protegida con verifyToken
 router.get('/getInfo', limiter, verifyToken, async (req, res) => {
   try {
-    await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version });
+    const email = req.user.email; // Obtenemos el email del usuario desde el token
+    const userSnapshot = await db.collection('users').where('email', '==', email).get();
+
+    if (userSnapshot.empty) {
+      await saveLog('error', 'Usuario no encontrado en getInfo', { email });
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const user = userSnapshot.docs[0].data();
+
+    await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version, email });
     res.json({
       nodeVersion: process.version,
       student: {
-        name: 'Ariadna Vanessa López Gómez',
-        group: 'IDGS11',
+        name: user.username, // Usamos el username del usuario autenticado
+        group: user.grupo,   // Usamos el grupo del usuario autenticado
       },
     });
   } catch (error) {
