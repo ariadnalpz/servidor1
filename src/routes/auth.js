@@ -5,13 +5,12 @@ const speakeasy = require('speakeasy');
 const { saveLog } = require('../models/log');
 const db = require('../config/firebase');
 const limiter = require('../middleware/rateLimit');
-const verifyToken = require('../routes/auth');
 require('dotenv').config();
 
 const router = express.Router();
 
-// API getInfo (GET)
-router.get('/getInfo', limiter, verifyToken, async (req, res) => {
+// API getInfo (GET) - Sin verifyToken
+router.get('/getInfo', limiter, async (req, res) => {
   try {
     await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version });
     res.json({
@@ -135,7 +134,7 @@ router.post('/verify-otp', limiter, async (req, res) => {
   }
 });
 
-// Nueva ruta para iniciar la recuperación de contraseña (POST)
+// Ruta para iniciar la recuperación de contraseña (POST)
 router.post('/recover-password', limiter, async (req, res) => {
   const { email } = req.body;
 
@@ -160,7 +159,7 @@ router.post('/recover-password', limiter, async (req, res) => {
   }
 });
 
-// Nueva ruta para restablecer la contraseña (POST)
+// Ruta para restablecer la contraseña (POST)
 router.post('/reset-password', limiter, async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
@@ -206,8 +205,8 @@ router.post('/reset-password', limiter, async (req, res) => {
   }
 });
 
-// Ruta para obtener logs (GET) - Protegida con verifyToken
-router.get('/logs', limiter, verifyToken, async (req, res) => {
+// Ruta para obtener logs (GET) - Sin verifyToken
+router.get('/logs', limiter, async (req, res) => {
   try {
     const logsSnapshot = await db.collection('logs').get();
 
