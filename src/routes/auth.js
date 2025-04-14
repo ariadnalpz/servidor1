@@ -12,13 +12,29 @@ const router = express.Router();
 // API getInfo (GET) - Sin verifyToken
 router.get('/getInfo', limiter, async (req, res) => {
   try {
-    await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version });
+    const email = req.query.email; // Obtener el email desde la query (por ejemplo: /getInfo?email=server2@gmail.com)
+
+    let userData = null;
+    if (email) {
+      const userSnapshot = await db.collection('users').where('email', '==', email).get();
+      if (!userSnapshot.empty) {
+        const user = userSnapshot.docs[0].data();
+        userData = {
+          username: user.username,
+          grado: user.grado,
+          grupo: user.grupo,
+        };
+      }
+    }
+
+    await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version, email });
     res.json({
       nodeVersion: process.version,
       student: {
         name: 'Ariadna Vanessa López Gómez',
         group: 'IDGS11',
       },
+      user: userData, // Puede ser null si no se proporciona email o no se encuentra el usuario
     });
   } catch (error) {
     console.error('Error en getInfo:', error);
