@@ -5,7 +5,7 @@ const speakeasy = require('speakeasy');
 const { saveLog } = require('../models/log');
 const db = require('../config/firebase');
 const limiter = require('../middleware/rateLimit');
-const verifyToken = require('../middleware/auth'); // Importamos el middleware
+const verifyToken = require('../middleware/auth'); // Importar el middleware
 require('dotenv').config();
 
 const router = express.Router();
@@ -13,22 +13,12 @@ const router = express.Router();
 // API getInfo (GET) - Protegida con verifyToken
 router.get('/getInfo', limiter, verifyToken, async (req, res) => {
   try {
-    const email = req.user.email; // Obtenemos el email del usuario desde el token
-    const userSnapshot = await db.collection('users').where('email', '==', email).get();
-
-    if (userSnapshot.empty) {
-      await saveLog('error', 'Usuario no encontrado en getInfo', { email });
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    const user = userSnapshot.docs[0].data();
-
-    await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version, email });
+    await saveLog('info', 'Solicitud a getInfo', { nodeVersion: process.version });
     res.json({
       nodeVersion: process.version,
       student: {
-        name: user.username, // Usamos el username del usuario autenticado
-        group: user.grupo,   // Usamos el grupo del usuario autenticado
+        name: 'Ariadna Vanessa López Gómez',
+        group: 'IDGS11',
       },
     });
   } catch (error) {
